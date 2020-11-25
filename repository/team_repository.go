@@ -37,3 +37,12 @@ func (r teamRepository) Put(team *model.Team) error {
 func NewTeamRepository(client *datastore.Client) TeamRepository {
 	return &teamRepository{dsClient: client}
 }
+
+func NewDSClient(projectID string) *datastore.Client {
+	ctx := context.Background()
+	client, err := datastore.NewClient(ctx, projectID)
+	if err != nil {
+		panic(err)
+	}
+	return client
+}

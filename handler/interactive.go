@@ -47,9 +47,8 @@ func (h *Handler) HandleSlackInteractive(w http.ResponseWriter, r *http.Request)
 			},
 		}
 
-		// pubsubで実行する。レスポンスタイムアウトするため
-		uc := usecase.NewPrintText(h.teamRepo)
-		if err := uc.Do(usecase.PrintTextParams{Payload: payload}); err != nil {
+		if err := h.pubsubCli.PublishCreateTopic(payload); err != nil {
+			// TODO: http error
 			return err
 		}
 	default:

@@ -1,31 +1,39 @@
 package handler
 
 import (
-	"cloud.google.com/go/datastore"
-	"context"
 	"encoding/json"
+	"github.com/hayashiki/tarsier-integration/config"
+	"github.com/hayashiki/tarsier-integration/pubsub"
 	"github.com/hayashiki/tarsier-integration/repository"
 	"github.com/hayashiki/tarsier-integration/slackauth"
+	"log"
 	"net/http"
-	"os"
 )
 
 type Handler struct {
 	slackAuthSvc slackauth.Auth
-	teamRepo     repository.TeamRepository
+	TeamRepo     repository.TeamRepository
+	pubsubCli   pubsub.Client
 }
 
 func NewHandler() *Handler {
-	teamRepo := repository.NewTeamRepository(getDSClient(os.Getenv("GCP_PROJECT")))
+	conf := config.NewConfigFromEnv()
+	teamRepo := repository.NewTeamRepository(repository.NewDSClient(conf.GCPProject))
 	slackAuth := slackauth.NewAuth(
-		os.Getenv("SLACK_CLIENT_ID"),
-		os.Getenv("SLACK_SECRET_ID"),
-		os.Getenv("SLACK_REDIRECT_URL"),
+		conf.SlackClientID,
+		conf.SlackSecretID,
+		conf.SlackRedirectURL,
 		slackauth.DefaultSlackBaseURL)
+	pubsubCli, err := pubsub.NewClient("print_text", conf.GCPProject)
+	if err != nil {
+		log.Printf("fail to init pubsub, panic err=%v", err)
+		panic(err)
+	}
 
 	return &Handler{
 		slackAuthSvc: slackAuth,
-		teamRepo:     teamRepo,
+		TeamRepo:     teamRepo,
+		pubsubCli: pubsubCli,
 	}
 }
 
@@ -34,13 +42,4 @@ func jsonResponse(w http.ResponseWriter, status int, v interface{}) error {
 	w.Header().Set("Content-Type", "application/json; charset=UTF-8")
 	w.WriteHeader(status)
 	return json.NewEncoder(w).Encode(v)
-}
-
-func getDSClient(projectID string) *datastore.Client {
-	ctx := context.Background()
-	client, err := datastore.NewClient(ctx, projectID)
-	if err != nil {
-		panic(err)
-	}
-	return client
 }
