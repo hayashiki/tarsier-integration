@@ -18,7 +18,7 @@ func (h *Handler) HandleSlackAuth(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	uc := usecase.NewSlackAuthenticate(h.slackAuthSvc, h.teamRepo)
+	uc := usecase.NewSlackAuthenticate(h.slackAuthSvc, h.TeamRepo)
 	params := usecase.AuthenticateSlackParams{Code: codes[0]}
 	resp, err := uc.Do(params)
 	if err != nil {
